@@ -119,6 +119,22 @@ The ESLint configuration includes:
 
 Both Prettier and ESLint checks are automatically run in CI/CD pipelines to ensure code quality.
 
+## Maintainer delivery
+
+Open SaaS is a source template, so its release artifact is the reviewed
+`template/` archive rather than a runtime Docker image:
+
+```sh
+make preflight
+make release-check VERSION=wasp-v0.18-template
+git tag wasp-v0.18-template
+git push origin wasp-v0.18-template
+```
+
+The release workflow uploads `template.tar.gz` and its SHA-256 checksum.
+Derived applications own their runtime image, database migrations, secrets,
+and production deployment; none of those are bundled into the template.
+
 For information about other development tools used to maintain derived projects (like opensaas.sh and template-test), see [tools/README.md](./tools/README.md).
 
 ## Contributing

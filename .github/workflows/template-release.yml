@@ -29,10 +29,16 @@ jobs:
         with:
           ref: ${{ env.tag_name}}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Create template archive
-        # The Wasp CLI expects the template contents to be in the root of the archive.
-        working-directory: template
-        run: tar -czf "../$archive_name" .
+        run: make release-check VERSION="$tag_name" ARCHIVE="$archive_name"
 
       - name: Create release if it doesn't exist
         run: |
@@ -42,7 +48,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload release asset
-        run: gh release upload "$tag_name" "$archive_name" --clobber
+      - name: Upload release assets
+        run: gh release upload "$tag_name" "$archive_name" "$archive_name.sha256" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
