@@ -9,9 +9,9 @@ on:
 
 env:
   WASP_TELEMETRY_DISABLE: 1
-  WASP_VERSION:
-    # If you're copying this workflow to your own project, set this to your app's Wasp version:
-    main
+  # Keep CI aligned with template/app/main.wasp.ts. A newer CLI refuses to run
+  # projects whose declared Wasp version does not match.
+  WASP_VERSION: 0.25.0
 
 jobs:
   test:
@@ -33,12 +33,6 @@ jobs:
       - name: Install Wasp ${{ env.WASP_VERSION }}
         if: env.WASP_VERSION != 'main'
         run: npm i -g @wasp.sh/wasp-cli@${{ env.WASP_VERSION }}
-
-      # If you're copying this workflow to your own project, you can remove this step:
-      - name: Install latest development Wasp
-        if: env.WASP_VERSION == 'main'
-        # Installs the latest published build of the CLI from the `main` branch.
-        run: npm i -g https://pkg.pr.new/@wasp.sh/wasp-cli@main
 
       - name: Cache global node modules
         uses: actions/cache@v5
@@ -89,7 +83,35 @@ jobs:
           cd e2e-tests
           npx playwright install --with-deps
 
+      - name: Detect credentialed E2E availability
+        id: credentials
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID: ${{ secrets.STRIPE_HOBBY_SUBSCRIPTION_PRICE_ID }}
+          PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID: ${{ secrets.STRIPE_PRO_SUBSCRIPTION_PRICE_ID }}
+          PAYMENTS_CREDITS_10_PLAN_ID: ${{ secrets.STRIPE_CREDITS_PRICE_ID }}
+        run: |
+          required=(
+            OPENAI_API_KEY
+            STRIPE_API_KEY
+            STRIPE_WEBHOOK_SECRET
+            PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID
+            PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID
+            PAYMENTS_CREDITS_10_PLAN_ID
+          )
+          for name in "${required[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "full_e2e=0" >> "$GITHUB_OUTPUT"
+              echo "Credentialed E2E is unavailable; running the core browser suite."
+              exit 0
+            fi
+          done
+          echo "full_e2e=1" >> "$GITHUB_OUTPUT"
+
       - name: "Install Stripe CLI"
+        if: steps.credentials.outputs.full_e2e == '1'
         run: |
           curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg
           echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee -a /etc/apt/sources.list.d/stripe.list
@@ -100,12 +122,15 @@ jobs:
       # The Stripe CLI will receive the webhook events from Stripe test payments and
       # forward them to our local server so that we can test the payment flow in our e2e tests.
       - name: "Run Stripe CLI to listen for webhooks"
+        if: steps.credentials.outputs.full_e2e == '1'
         env:
           STRIPE_DEVICE_NAME: ${{ secrets.STRIPE_DEVICE_NAME }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_KEY }}
         run: |
-          stripe listen --api-key ${{ secrets.STRIPE_KEY }} --forward-to localhost:3001/payments-webhook &
+          stripe listen --api-key "$STRIPE_API_KEY" --forward-to localhost:3001/payments-webhook &
 
-      - name: "Run Playwright tests"
+      - name: "Run full Playwright tests"
+        if: steps.credentials.outputs.full_e2e == '1'
         env:
           # The e2e tests are testing parts of the app that need certain env vars, so we need to access them here.
           # These secretes can be set in your GitHub repo settings, e.g. https://github.com/<account>/<repo>/settings/secrets/actions
@@ -122,3 +147,13 @@ jobs:
         run: |
           cd e2e-tests
           npm run e2e:playwright
+
+      - name: "Run core Playwright tests"
+        if: steps.credentials.outputs.full_e2e != '1'
+        env:
+          SKIP_EMAIL_VERIFICATION_IN_DEV: true
+          REACT_APP_GOOGLE_ANALYTICS_ID: G-H3LSJCK95H
+        working-directory: ./template
+        run: |
+          cd e2e-tests
+          npx playwright test tests/authRedirectTests.spec.ts tests/landingPageTests.spec.ts
