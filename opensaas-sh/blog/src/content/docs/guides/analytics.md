@@ -23,24 +23,21 @@ Once you've signed up, you'll be taken to your dashboard. Create your site by ad
 PLAUSIBLE_SITE_ID=<your domain without www>
 ```
 
-After adding your domain, you'll be taken to a page with your Plausible script tag. Copy and paste this script tag into the `main.wasp` file's head section. 
+After adding your domain, you'll be taken to a page with your Plausible script tag. Copy and paste this script tag into the app's `head` config, defined in the `src/client/head.wasp.ts` file. 
 
-```js {7}
-app OpenSaaS {
-  wasp: {
-    version: "^0.13.0"
-  },
-  title: "My SaaS App",
-  head: [
-        "<your plausible script tag here>",
-  ],
-  //...
+```ts title="src/client/head.wasp.ts" {5}
+import { type App } from "@wasp.sh/spec";
+
+export const head: App["head"] = [
+  // ...
+  "<your plausible script tag here>",
+];
 ```
 
 Go back to your Plausible dashboard, click on your username in the top right, and click on the `Settings` tab. Scroll down, find your API key and paste it into your `.env.server` file under the `PLAUSIBLE_API_KEY` variable.
 
 :::note[No Cookies]
-Plausible does not use cookies, so you don't need to add it to your [Cookie Consent Modal](/guides/cookie-consent/), hence the script can be added directly to `app.head` in your `main.wasp` file.
+Plausible does not use cookies, so you don't need to add it to your [Cookie Consent Modal](/guides/cookie-consent/), hence the script can be added directly to the app's `head` config in the `src/client/head.wasp.ts` file.
 :::
 
 ### Self-hosted Plausible
@@ -48,7 +45,8 @@ Plausible does not use cookies, so you don't need to add it to your [Cookie Cons
 Plausible, being an open-source project, allows you to self-host your analytics. This is a great option if you want to keep your data private and not pay for the hosted service.
 
 *coming soon...*
-*until then, check out the [official documentation](https://plausible.io/docs)*
+
+*...until then, check out the [official documentation](https://plausible.io/docs)*.
 
 :::tip[Contribute!] 
 If you'd like to help us write this guide, click the "Edit page" button at the bottom of this page 
@@ -85,7 +83,7 @@ REACT_APP_GOOGLE_ANALYTICS_ID=<your-google-analytics-id> # e.g. G-1234567890
 
 :::tip[noscript]
 In the Installation Instructions, Google Tag Manager might also instruct you to paste the `noscript` code snippet immediately after the opening `<body>` tag.
-You should skip this step because this snippet is activated only if users try to browse your app without JavaScript enabled, which is very rare and Wasp needs JS anyway.
+You should skip this step because this snippet is activated only if users try to browse your app without JavaScript enabled, which is very rare and React needs JS anyway.
 :::
 
 Then, set up the Google Analytics API access by following these steps:

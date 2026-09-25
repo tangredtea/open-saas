@@ -7,7 +7,7 @@ banner:
 
 Awesome, you now have your very own SaaS app up and running! But, first, here are some important things you need to know about your app in its current state:
 
-1. When signing up with a new user, you will get a message to check your email for a verification link. But, in development, these emails are simply written to your terminal. **So, to continue with the registration process, check your server logs after sign up**! 
+1. When signing up with a new user, you will get a message to check your email for a verification link. But, in development, these emails are simply written to your terminal. **So, to continue with the registration process, check your server logs after sign up**!
 ```sh title="server logs"
 [ Server ] ╔═══════════════════════╗
 [ Server ] ║ Dummy email sender ✉️  ║
@@ -25,11 +25,12 @@ Awesome, you now have your very own SaaS app up and running! But, first, here ar
 2. Your app is still missing some key configurations (e.g. API keys for Payment Processors, OpenAI, AWS S3, Auth, Analytics). These services won't work at the moment, but don't fear, because **we've provided detailed guides in these docs to help you set up all the services in this template**.
 3. If you want to get a feel for what your SaaS could look like when finished, **check out [OpenSaaS.sh](https://opensaas.sh) in your browser. It was built using this template!** So make sure to log in, play around with the demo app, make a test payment, and check out the admin dashboard.
 
-In the sections below, we will take a short guide through the codebase and the app's main features. Then at the end of this tour, we also prepared a checklist of likely changes you will want to make to the app to make it your own. 
+In the sections below, we will take a short guide through the codebase and the app's main features. Then at the end of this tour, we also prepared a checklist of likely changes you will want to make to the app to make it your own.
 
 We're looking forward to seeing what you build!
 
 ## Getting acquainted with the codebase
+
 Now that you've gotten a first look at the app, let's dive into the codebase.
 
 At the root of our project, you will see three folders:
@@ -40,27 +41,24 @@ At the root of our project, you will see three folders:
 └── e2e-tests
 ```
 
-`app` contains the Wasp project files, which is your full-stack React + NodeJS + Prisma app along with a Wasp config file, `main.wasp`, which will be explained in more detail below.
+`app` contains the Wasp project files, which is your full-stack (React + NodeJS + Prisma) app along with a Wasp Spec file, `main.wasp.ts`, which will be explained in more detail below.
 
-`blog` contains the [Astro Starlight template](https://starlight.astro.build/) for the blog and documentation section. 
+`blog` contains the [Astro Starlight theme](https://starlight.astro.build/) for the blog and documentation section. 
 
 `e2e-tests` contains the end-to-end tests using Playwright, which you can run to test your app's functionality.
 
 ### App File Structure
 
-We've structured this full-stack app template vertically (by feature). That means that most directories within `app/src` contain both the React client code and NodeJS server code necessary for implementing its logic. 
+We've structured this full-stack app template vertically (by feature). That means that most directories within `app/src` contain both the React client code and NodeJS server code necessary for implementing its logic.
 
 Let's check out what's in the `app` folder in more detail:
 
-:::caution[v0.13 and below]
-If you are using an older version of the Open SaaS template with Wasp `v0.13.x` or below, you may see a slightly different file structure. But don't worry, the vast majority of the code and features are the same! 😅
-:::
-
 ```sh
 .
-├── main.wasp              # Wasp Config file. You define your app structure here.
+├── main.wasp.ts           # Wasp Spec file. You define your app structure here.
+├── schema.prisma          # Prisma schema file. You define your database models here.
 ├── .wasp/                 # Output dir for Wasp. DON'T MODIFY THESE FILES!
-├── public/                # Public assets dir, e.g. www.yourdomain.com/public-banner.webp
+├── public/                # Public assets dir, e.g. `www.yourdomain.com/public-banner.webp`.
 ├── src/                   # Your code goes here.
 │   ├── admin/             # Admin dashboard related pages and components.
 │   ├── analytics/         # Logic and background jobs for processing analytics.
@@ -68,8 +66,7 @@ If you are using an older version of the Open SaaS template with Wasp `v0.13.x` 
 │   ├── client/            # Shared components, hooks, landing page, and other client code (React).
 │   ├── demo-ai-app/       # Logic for the example AI-powered demo app.
 │   ├── file-upload/       # Logic for uploading files to S3.
-│   ├── landing-page       # Landing page related code
-│   ├── messages           # Logic for app user messages.
+│   ├── landing-page/      # Landing page related code
 │   ├── payment/           # Logic for handling payments and webhooks.
 │   ├── server/            # Scripts, shared server utils, and other server-specific code (NodeJS).
 │   ├── shared/            # Shared constants and util functions.
@@ -77,7 +74,6 @@ If you are using an older version of the Open SaaS template with Wasp `v0.13.x` 
 ├── .env.server            # Dev environment variables for your server code.
 ├── .env.client            # Dev environment variables for your client code.
 ├── .prettierrc            # Prettier configuration.
-├── tailwind.config.js     # TailwindCSS configuration.
 ├── package.json
 ├── package-lock.json
 └── .wasproot
@@ -87,16 +83,42 @@ If you are using an older version of the Open SaaS template with Wasp `v0.13.x` 
 
 This template at its core is a Wasp project, where [Wasp](https://wasp.sh) is a full-stack web app framework that let's you write your app in React, NodeJS, and Prisma and will manage the "boilerplatey" work for you, allowing you to just take care of the fun stuff!
 
-[Wasp's secret sauce](https://wasp.sh/docs) is its use of a config file (`main.wasp`) and compiler which takes your code and outputs the client app, server app and deployment code for you. 
+[Wasp's secret sauce](https://wasp.sh/docs) is its use of a config file, the Wasp Spec (`main.wasp.ts`), and compiler which takes your code and outputs the client app, server app and deployment code for you. 
 
-In this template, we've already defined a number of things in the `main.wasp` config file, including:
+Because the Wasp Spec is just TypeScript, we've split the config vertically as well: each feature folder has its own `*.wasp.ts` file (e.g. `src/auth/auth.wasp.ts`, `src/payment/payment.wasp.ts`) which exports a `Spec`, and `main.wasp.ts` combines them all in the `app` definition:
 
-- [Auth](https://wasp.sh/docs/auth/overview)
-- [Routes and Pages](https://wasp.sh/docs/tutorial/pages)
-- [Prisma Database Models](https://wasp.sh/docs/data-model/entities)
-- [Operations (data read and write functions)](https://wasp.sh/docs/data-model/operations/overview)
-- [Background Jobs](https://wasp.sh/docs/advanced/jobs)
-- [Email Sending](https://wasp.sh/docs/advanced/email)
+```ts title="main.wasp.ts"
+import { app, page, route } from "@wasp.sh/spec";
+
+import { LandingPage } from "./src/landing-page/LandingPage" with { type: "ref" };
+
+import { authConfig, authSpec } from "./src/auth/auth.wasp";
+import { paymentSpec } from "./src/payment/payment.wasp";
+// ...
+
+export default app({
+  name: "OpenSaaS",
+  wasp: { version: "^0.24.0" },
+  title: "My Open SaaS App",
+  auth: authConfig,
+  // ...
+  spec: [
+    route("LandingPageRoute", "/", page(LandingPage), { prerender: true }),
+    authSpec,
+    paymentSpec,
+    // ...
+  ],
+});
+```
+
+In this template, we've already defined a number of things in the Wasp Spec, including:
+
+- [Auth](https://wasp.sh/docs/auth/overview).
+- [Routes and Pages](https://wasp.sh/docs/tutorial/pages).
+- [Prisma Database Models](https://wasp.sh/docs/data-model/entities).
+- [Operations (data read and write functions)](https://wasp.sh/docs/data-model/operations/overview).
+- [Background Jobs](https://wasp.sh/docs/advanced/jobs).
+- [Email Sending](https://wasp.sh/docs/advanced/email).
 
 By defining these things in the config file, Wasp continuously handles the boilerplate necessary with putting all these features together. You just need to focus on the business logic of your app.
 
@@ -114,13 +136,11 @@ The `src/client` folder contains any additional client-side code that doesn't be
 .
 └── client
     ├── components         # Your shared React components.
-    ├── fonts              # Extra fonts
     ├── hooks              # Your shared React hooks.
-    ├── icons              # Your shared SVG icons.
-    ├── static             # Assets that you need access to in your code, e.g. import logo from 'static/logo.png'
+    ├── static             # Assets that you need access to in your code, e.g. import logo from 'static/logo.png'.
     ├── App.tsx            # Main app component to wrap all child components. Useful for global state, navbars, etc.
-    ├── cn.ts              # Helper function for dynamic and conditional Tailwind CSS classes.
-    └── Main.css
+    ├── Main.css           # Main CSS file. Includes the Tailwind CSS into the project.
+    └── utils.ts
 
 ```
 
@@ -131,7 +151,7 @@ The `src/server` folder contains any additional server-side code that does not b
 ```sh
 └── server
     ├── scripts            # Scripts to run via Wasp, e.g. database seeding.
-    └── utils.ts
+    └── validation.ts
 ```
 
 ## Main Features
@@ -140,47 +160,44 @@ The `src/server` folder contains any additional server-side code that does not b
 
 This template comes with a fully functional auth flow out of the box. It takes advantages of Wasp's built-in [Auth features](https://wasp.sh/docs/auth/overview), which do the dirty work of rolling your own full-stack auth for you!
 
-```js title="main.wasp"
-  auth: {
-    userEntity: User,
-    methods: {
-      email: { 
-        //...
-      },
-      google: {},
-      github: {},
-      discord: {}
-    },
-    onAuthFailedRedirectTo: "/",
+```ts title="src/auth/auth.wasp.ts"
+export const authConfig: Auth = {
+  userEntity: "User",
+  methods: {
+    email: emailAuthMethod,
+    google: googleAuthMethod,
+    gitHub: gitGubAuthMethod,
+    discord: discordAuthMethod,
   },
+  onAuthFailedRedirectTo: "/login",
+  onAuthSucceededRedirectTo: "/demo-app",
+};
 ```
 
-By defining the auth structure in your `main.wasp` file, Wasp manages all the necessary code for you, including:
-- Email verified login with reset password
-- Social login with Google and/or GitHub
-- Auth-related database entities for user credentials, sessions, and social logins 
-- Custom-generated AuthUI components for login, signup, and reset password
-- Auth hooks for fetching user data
+By defining the auth structure in the Wasp Spec, Wasp manages all the necessary code for you, including:
+- Email verified login with password reset.
+- Social login with Google and/or GitHub.
+- Auth-related database entities for user credentials, sessions, and social logins.
+- Custom-generated AuthUI components for login, signup, and password reset.
+- Auth hooks for fetching user data.
 
-<!-- TODO: add pic of AuthUI components -->
-
-We've set the template up with Wasp's `email`, `google`, and `gitHub` methods, which are all battle-tested and suitable for production. 
+We've set the template up with Wasp's `email`, `google`, `discord` and `gitHub` methods, which are all battle-tested and suitable for production. 
 
 You can get started developing your app with the `email` method right away! 
 
 :::caution[Dummy Email Provider]
-Note that the `email` method relies on an `emailSender` (configured at `app.emailSender` in the `main.wasp` file), a service which sends emails to verify users and reset passwords. 
+Note that the `email` method relies on an `emailSender` (configured in the `src/server/emailSender.wasp.ts` file), a service which sends emails to verify users and reset passwords. 
 
 For development purposes, Wasp provides a `Dummy` email sender which Open SaaS comes with as the default. This provider *does not* actually send any confirmation emails to the specified email address, but instead logs all email verification links/tokens to the console! You can then follow these links to verify the user and continue with the sign-up process.
 
-```tsx title="main.wasp" 
-  emailSender: {
-    provider: Dummy, // logs all email verification links/tokens to the server's console
-    defaultFrom: {
-      name: "Open SaaS App",
-      email: "me@example.com" 
-    },
+```ts title="src/server/emailSender.wasp.ts"
+export const emailSender: EmailSender = {
+  provider: "Dummy", // Logs all email verification links/tokens to the server's console.
+  defaultFrom: {
+    name: "Open SaaS App",
+    email: "me@example.com",
   },
+};
 ```
 :::
 
@@ -188,55 +205,68 @@ We will explain more about these auth methods, and how to properly integrate the
 
 ### Subscription Payments with Stripe, Lemon Squeezy or Polar
 
-No SaaS is complete without payments, specifically subscription payments. That's why this template comes with a fully functional Stripe, Lemon Squeezy and Polar integration. 
+No SaaS is complete without payments, specifically subscription payments. That's why this template comes with a fully functional Stripe, Lemon Squeezy and Polar integration.
 
 Let's take a quick look at how payments are handled in this template.
 
-1. a user clicks the `BUY` button and a **Checkout session** is created on the server
-2. the user is redirected to the Checkout page where they enter their payment info
-3. the user is redirected back to the app and the Checkout session is completed
-4. Stripe / Lemon Squeezy / Polar sends a webhook event to the server with the payment info
-5. The app server's **webhook handler** handles the event and updates the user's subscription status
+1. A user clicks the `BUY` button and a **checkout session** is created on the server.
+2. The user is redirected to the payment processor's checkout page where they enter their payment info.
+3. The checkout session is completed and the user is redirected back to the app.
+4. Payment processor sends a webhook event to the app's server with the payment info.
+5. The app server's **webhook handler** handles the event and updates the user's subscription status.
 
 The payment processor you choose (Stripe, Lemon Squeezy or Polar) and its related functions can be found at `src/payment/paymentProcessor.ts`. The `PaymentProcessor` object holds the logic for creating checkout sessions, webhooks, etc.
 
-The logic for creating the Checkout session is defined in the `src/payment/operation.ts` file. [Actions](https://wasp.sh/docs/data-model/operations/actions) are a type of Wasp Operation, specifically your server-side functions that are used to **write** or **update** data to the database. Once they're defined in the `main.wasp` file, you can easily call them on the client-side:
+The logic for creating the Checkout session is defined in the `src/payment/operation.ts` file. [Actions](https://wasp.sh/docs/data-model/operations/actions) are a type of Wasp Operation, specifically your server-side functions that are used to **write** or **update** data to the database. Once they're defined in the Wasp Spec, you can easily call them on the client-side:
 
-a) define the action in the `main.wasp` file
-```js title="main.wasp"
-action generateCheckoutSession {
-  fn: import { generateCheckoutSession } from "@src/payment/operations",
-  entities: [User]
-}
+a) define the action in the `src/payment/payment.wasp.ts` file
+```ts title="src/payment/payment.wasp.ts"
+import { action, type Spec } from "@wasp.sh/spec";
+import { generateCheckoutSession } from "./operations" with { type: "ref" };
+
+export const paymentSpec: Spec = [
+  // ...
+  action(generateCheckoutSession, { entities: ["User"] }),
+];
 ```
 
 b) implement the action in the `src/payment/operations` file
-```js title="src/server/actions.ts"
-export const generateCheckoutSession = async (paymentPlanId, context) => { 
-  //...
- }
+```ts title="src/payment/operations.ts"
+export const generateCheckoutSession: GenerateCheckoutSession<
+  GenerateCheckoutSessionInput,
+  CheckoutSession
+> = async (rawPaymentPlanId, context) => {
+  // ...
+};
 ```
 
 c) call the action on the client-side
 ```js title="src/client/app/SubscriptionPage.tsx"
 import { generateCheckoutSession } from "wasp/client/operations";
 
-const handleBuyClick = async (paymentPlanId) => {
+async function handleBuyNowClick(paymentPlanId: PaymentPlanId) {
+  // ...
   const checkoutSession = await generateCheckoutSession(paymentPlanId);
+  // ...
 };
 ```
 
-The webhook handler is defined in the `src/payment/webhook.ts` file. Unlike Actions and Queries in Wasp which are only to be used internally, we define the webhook handler in the `main.wasp` file as an API endpoint in order to expose it externally to the payment processor.
+The webhook handler is defined in the `src/payment/webhook.ts` file. Unlike Actions and Queries in Wasp which are only to be used internally, we define the webhook handler in the Wasp Spec as an API endpoint in order to expose it externally to the payment processor.
 
-```js title="main.wasp"
-api paymentsWebhook {
-  fn: import { paymentsWebhook } from "@src/payment/webhook",
-  httpRoute: (POST, "/payments-webhook") 
-  entities: [User],
-}
+```ts title="src/payment/payment.wasp.ts"
+import { api, type Spec } from "@wasp.sh/spec";
+import { paymentsMiddlewareConfigFn, paymentsWebhook } from "./webhook" with { type: "ref" };
+
+export const paymentSpec: Spec = [
+  // ...
+  api("POST", "/payments-webhook", paymentsWebhook, {
+    entities: ["User"],
+    middlewareConfigFn: paymentsMiddlewareConfigFn,
+  }),
+];
 ```
 
-Within the webhook handler, we look for specific events that the Payment Processor sends us to let us know which payment was completed and for which user. Then we update the user's subscription status in the database.
+Within the webhook handler, we look for specific events that the payment processor sends us to let us know which payment was completed and for which user. Then we update the user's subscription status in the database.
 
 To learn more about configuring the app to handle your products and payments, check out the [Payment Integrations guide](/guides/payment-integrations/).
 
@@ -251,21 +281,23 @@ If you're finding this template and its guides useful, consider giving us [a sta
 
 Keeping an eye on your metrics is crucial for any SaaS. That's why we've built an administrator's dashboard where you can view your app's stats, user data, and revenue all in one place.
 
-<!-- TODO: add pic of admin dash -->
-
 To do that, we've leveraged Wasp's [Jobs feature](https://wasp.sh/docs/advanced/jobs) to run a cron job that calculates your daily stats. The app stats, such as page views and sources, can be pulled from either Plausible or Google Analytics. All you have to do is create a project with the analytics provider of your choice and import the respective pre-built helper functions!
 
-```js title="main.wasp"
-job dailyStatsJob {
-  executor: PgBoss,
-  perform: {
-    fn: import { calculateDailyStats } from "@src/analytics/stats"
-  },
-  schedule: {
-    cron: "0 * * * *" // runs every hour
-  },
-  entities: [User, DailyStats, Logs, PageViewSource]
-}
+```ts title="src/analytics/analytics.wasp.ts"
+import { job, type Spec } from "@wasp.sh/spec";
+import { calculateDailyStatsJob } from "./stats" with { type: "ref" };
+
+export const analyticsSpec: Spec = [
+  // ...
+  job(calculateDailyStatsJob, {
+    executor: "PgBoss",
+    schedule: {
+      cron: "0 * * * *", // Every hour. useful in production.
+      // cron: "* * * * *" // Every minute. useful for debugging.
+    },
+    entities: ["User", "DailyStats", "Logs", "PageViewSource"],
+  }),
+];
 ```
 
 For more info on integrating Plausible or Google Analytics, check out the [Analytics guide](/guides/analytics/).
@@ -274,11 +306,11 @@ For more info on integrating Plausible or Google Analytics, check out the [Analy
 
 Open SaaS ships SEO-friendly out of the box. Three pieces work together so your app shows up in search results and AI answers:
 
-1. **Meta tags** in `main.wasp`'s `head` (title, description, Open Graph, Twitter cards) get injected into your landing page HTML.
+1. **Meta tags** in the app's `head` config (`src/client/head.wasp.ts`) — title, description, Open Graph, Twitter cards — get injected into your landing page HTML.
 2. **JSON-LD structured data (Schema Markup)** in `src/landing-page/components/SchemaMarkup.tsx` tells search engines and LLMs what your app is, who makes it, and what it offers — feeding rich snippets and AI-generated answers.
 3. **Prerendering** turns your React marketing pages (e.g. landing page, pricing, FAQ, etc.) into static HTML at build time, so crawlers see your content (including the schema markup) without needing to execute JavaScript.
 
-Customize the meta tags in `main.wasp` and the schema object in `SchemaMarkup.tsx` to match your product. See the [SEO guide](/guides/seo-performance/) for details.
+Customize the meta tags in `src/client/head.wasp.ts` and the schema object in `SchemaMarkup.tsx` to match your product. See the [SEO guide](/guides/seo-performance/) for details.
 
 ## App Customization Walkthrough
 
@@ -286,12 +318,12 @@ Customize the meta tags in `main.wasp` and the schema object in `SchemaMarkup.ts
 
 When you first start your Open SaaS app straight from the template, it will run, but many of the services won't work because they lack your own API keys. Here are list of services that need your API keys to work properly:
 
-- Auth Methods (Google, GitHub)
-- Stripe, Lemon Squeezy or Polar
-- OpenAI (Chat GPT API)
-- Email Sending (Sendgrid) -- you must set this up if you're using the `email` Auth method 
-- Analytics (Plausible or Google Analytics)
-- File Uploading (AWS S3)
+- Auth Methods (Google, Discord, GitHub).
+- Payment processor (Stripe, Lemon Squeezy or Polar).
+- OpenAI (ChatGPT API).
+- Email Sending (Sendgrid) -- you must set this up if you're using the `email` auth method.
+- Analytics (Plausible or Google Analytics).
+- File Uploading (AWS S3).
 
 Now would be a good time to decide which features you do and do not need for your app, and remove the ones from the codebase that you don't need.
 
@@ -304,43 +336,44 @@ Remember, this template is built on the Wasp framework. If, at any time, these d
 But before you start setting up the main features, let's walk through the customizations you will likely want to make to the template to make it your own.
 
 ### Customizations Checklist
-#### `main.wasp` Config File
+#### Wasp Spec (`main.wasp.ts`)
 - [ ] Change the app name and title:
-  ```ts title="main.wasp" {1, 6}
-    app YourAppName { 
-      wasp: {
-        version: "^0.13.2"
-      },
-
-      title: "Your App Name",
+  ```ts title="main.wasp.ts" {2, 4}
+  export default app({
+    name: "YourAppName",
+    wasp: { version: "^0.24.0" },
+    title: "Your App Name",
+    // ...
+  });
   ```
+
   :::caution[Restart Your App]
-  Upon changing the app name, new, empty development database will be assigned to your app. This means you'll need to rerun `wasp db start`, `wasp db migrate-dev` and `wasp start`.
+  Development databases are connceted to your app's name. Upon changing the app name, new, empty development database will be assigned to your app. This means you'll need to rerun `wasp db start`, `wasp db migrate-dev` and `wasp start`.
   :::
-- [ ] Update meta tags in `app.head` (even if you don't have a custom domain yet, put one you would like to have, as this won't affect development).
-- [ ] Update `app.emailSender.defaultFrom.name` with the name of your app/company/whatever you want your users to see in their inbox, if you're using the `emailSender` feature and/or `email` Auth method.
+- [ ] Update meta tags in the `head` config (`src/client/head.wasp.ts`) (even if you don't have a custom domain yet, put one you would like to have, as this won't affect development).
+- [ ] Update `defaultFrom.name` in the `emailSender` config (`src/server/emailSender.wasp.ts`) with the name of your app/company/whatever you want your users to see in their inbox, if you're using the `emailSender` feature and/or `email` Auth method.
 - [ ] Remove any features you might not use or need:
-  - [ ] Auth methods - `app.auth.methods`
-    - [ ] If you're not using `email` Auth method, remove the routes/pages `RequestPasswordReset`, `PasswordReset`, and `EmailVerification`
-  - [ ] Email Sending - `app.emailSender`, `job emailChecker`
-  - [ ] Plausible analytics - `app.head`
-  - [ ] File Uploading - `entity File`, `route FileUploadRoute`, `action createFile`, `query getAllFilesByUser`, `getDownloadFileSignedURL`
+  - [ ] Auth methods - `methods` in `src/auth/auth.wasp.ts`:
+    - [ ] If you're not using `email` Auth method, remove the routes/pages: `RequestPasswordReset`, `PasswordReset`, and `EmailVerification`.
+  - [ ] Email Sending - `src/server/emailSender.wasp.ts`.
+  - [ ] Plausible analytics - `head` config in `src/client/head.wasp.ts`.
+  - [ ] File Uploading - the `File` model in `schema.prisma`, the `src/file-upload/file-upload.wasp.ts` spec, and all operations tied to file uploading.
 - [ ] Rename Entites and their properties, Routes/Pages, & Operations, if you wish.
 
 #### Customizing the Look / Style of the App
 - [ ] Update your favicon at `public/favicon.ico`.
 - [ ] Update the banner image used when posting links to your site at `public/public-banner.webp`.
-  - [ ] Update the URL for this banner at `og:image` and `twitter:image` in `app.head` of the `main.wasp` file.
+  - [ ] Update the URL for this banner at `og:image` and `twitter:image` in the `head` config of the `src/client/head.wasp.ts` file.
 - [ ] Update the JSON-LD structured data in `src/landing-page/components/SchemaMarkup.tsx` with your app's name, description, URL, and other metadata. This helps search engines and LLMs understand your app for rich results and AI answers.
-- [ ] Make changes to your landing page, `landingPage.tsx`.
+- [ ] Make changes to your landing page, `LandingPage.tsx`.
   - [ ] Customize the `navBar`, `features`, `testimonials`, and `faqs` in the `contentSections.ts` file.
   - [ ] Change/rename the `logo.webp` and main hero banner (`open-saas-banner.webp`) in the `static` folder.
-- [ ] If you want to make changes to the global styles of the app, you can do so in `tailwind.config.cjs`. **Be aware that the current custom global styles defined already are mostly used in the app's Admin Dashboard!**
+- [ ] If you want to make changes to the global styles of the app, you can do so in `Main.css`. **Be aware that changing the current global styles affects most of the app!**
 
 #### Customizing the Analytics & Admin Dashboard
-- [ ] If you're using Plausible, update the `app.head` with your Plausible domain.
-- [ ] Update the `calculateDailyStats` function in `src/server/workers/calculateDailyStats.ts` to pull the stats from the analytics provider you've chosen (Plausible or Google Analytics).
-- [ ] Change the cron schedule in the `dailyStatsJob` in the `main.wasp` file to match how often you want your stats to be calculated.
+- [ ] If you're using Plausible, update the `head` config in `src/client/head.wasp.ts` with your Plausible domain.
+- [ ] Update the `calculateDailyStatsJob` function in `src/analytics/stats.ts` to pull the stats from the analytics provider you've chosen (Plausible or Google Analytics).
+- [ ] Change the cron schedule of the `calculateDailyStatsJob` in the `src/analytics/analytics.wasp.ts` file to match how often you want your stats to be calculated.
 - [ ] Update the `AdminDashboard` components to display the stats you do/don't want to see.
 
 #### `.env.server` and `.env.client` Files
@@ -348,12 +381,12 @@ But before you start setting up the main features, let's walk through the custom
 - [ ] Delete any redundant environment variables that you're not using, from the `.env.*` files as well as the `.env.*.example` files.
 
 #### Other Customizations
-- [ ] Make a new GitHub Repo for your app.
+- [ ] Make a new GitHub repository for your app.
 - [ ] Deploy your app to a hosting provider.
 - [ ] Buy a domain name for your app and get it set up with your hosting provider.
 - [ ] Read the `e2e-tests` README and get your end-to-end tests set up.
-  - [ ] Change the tests to suit the changes you've made to your app
-- [ ] Get the CI pipeline set up for your app (you can get started by using the Open SaaS development CI [example here](https://github.com/wasp-lang/open-saas/tree/main/.github/workflows))
+  - [ ] Change the tests to suit the changes you've made to your app.
+- [ ] Get the CI pipeline set up for your app (you can get started by using the Open SaaS development CI [example here](https://github.com/wasp-lang/open-saas/tree/main/.github/workflows)).
 
 ## What's next?
 
