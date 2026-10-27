@@ -16,7 +16,13 @@ permissions:
   contents: write
 
 jobs:
+  fleet-security-source:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/security-source.yml
+
   release:
+    needs: fleet-security-source
     runs-on: ubuntu-latest
 
     env:

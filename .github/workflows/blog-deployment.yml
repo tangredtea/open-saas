@@ -13,7 +13,13 @@ on:
       - "opensaas-sh/blog/**"
 
 jobs:
+  fleet-security-source:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/security-source.yml
+
   build:
+    needs: fleet-security-source
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
@@ -34,6 +40,7 @@ jobs:
         run: npm run build
 
   deploy:
+    needs: fleet-security-source
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
